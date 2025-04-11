@@ -79,24 +79,32 @@ def main():
     parser.add_argument("--NID_AUT", type=str, nargs=1, help="NID_AUT 수동입력", required=False)
     parser.add_argument("--NID_SES", type=str, nargs=1, help="NID_SES 수동입력", required=False)
     parser.add_argument("-f", "--file", nargs='?', default="", const="purchaseList.txt", type=str)
+    parser.add_argument("-s", "--skip", action="store_true")
     args = parser.parse_args()
 
     cookies = dict()
 
-    if (args.NID_AUT!=None and args.NID_SES!=None):
-        cookies = { "NID_AUT":str(args.NID_AUT)[2:-2], "NID_SES":str(args.NID_SES)[2:-2]}
-    
-    if len(cookies) == 0:
-        try:
-            cookiePath = os.path.abspath(__file__)[:-20] + "cookie.txt"
-            cookieFile = open(cookiePath, 'r')
-            cookies = json.load(cookieFile)
-        except:
-            print("쿠키 파일 읽기 실패")
-            return
-        finally:
-            cookieFile.close()
+    fileStore = False
 
+    if args.skip:
+        if (args.NID_AUT!=None and args.NID_SES!=None):
+            cookies = { "NID_AUT":str(args.NID_AUT)[2:-2], "NID_SES":str(args.NID_SES)[2:-2]}
+       
+        if len(cookies) == 0:
+            try:
+                cookiePath = os.path.abspath(__file__)[:-20] + "cookie.txt"
+                cookieFile = open(cookiePath, 'r')
+                cookies = json.load(cookieFile)
+                cookieFile.close()
+            except:
+                print("쿠키 파일 읽기 실패")
+                return
+    else:
+        NID_AUT = input("NID_AUT의 값을 입력하세요 : ")
+        NID_SES = input("NID_SES의 값을 입력하세요 : ")
+        cookies = {"NID_AUT":NID_AUT, "NID_SES":NID_SES}
+        fileStore = (True if input("전체 목록을 파일로 만드시겠습니까? (y/n) : ") == 'y' else False)
+        
 
     if len(cookies) == 0:
         print("쿠기가 없습니다")
@@ -115,9 +123,9 @@ def main():
     finally:
         cookieFile.close()
 
-    if args.file != "":
+    if args.file != "" or fileStore:
         try:
-            outputPath = os.path.abspath(__file__)[:-20] + args.file
+            outputPath = os.path.abspath(__file__)[:-20] + (args.file if args.file != "" else 'purchaseList.txt')
             outputFile = open(outputPath, 'w', encoding="utf-8")
             outputFile.write('"{ list" : ' + str(myAccount.getEntireList()).replace('},','},\n ').replace('[', '[\n  ') + "}")
             outputFile.close()
