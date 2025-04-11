@@ -75,18 +75,38 @@ class CheeseAccount:
 
 
 def main():
-    #접속을 위한 쿠키, 헤더, 그리고 요청 URL
-    NID_AUT="Your NID_AUT"
-    NID_SES="Yout NID_SES"
-    cookies = {'NID_AUT': NID_AUT, 'NID_SES': NID_SES}
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--NID_AUT", type=str, nargs=1, help="NID_AUT 수동입력", required=False)
+    parser.add_argument("--NID_SES", type=str, nargs=1, help="NID_SES 수동입력", required=False)
+    parser.add_argument("-c", "--cookie", nargs='?', default="cookie.txt", const="cookie.txt", help="이미 저장된 쿠키의 정보를 가져옵니다.")
+    parser.add_argument("-f", "--file", nargs='?', default="", const="purchaseList.txt", type=str)
+    args = parser.parse_args()
+
+    cookies = []
+    if (args.NID_AUT!=None and args.NID_SES!=None):
+        cookies += [args.NID_AUT, args.NID_SES]
     
+    if len(cookies) == 0 :
+        try:
+            cookiePath = os.path.abspath(__file__) + args.cookie
+            file = open(cookiePath)
+            cookies = dict(file.read)
+            myAccount = CheeseAccount(NID_AUT=cookies["NID_AUT"], NID_SES=["NID_SES"])
+        except:
+            print("Something got wrong!")
+
+
+    if len(cookies) != 0:
+        myAccount = CheeseAccount(NID_AUT=str(cookies[0]), NID_SES=str(cookies[1]))
+        print(str(myAccount.getTotalPrice()) + "원")
+        return
+    
+    print("The Credential is void!")
 
     #치즈 구매 내역
-    myAccount = CheeseAccount(NID_AUT, NID_SES)
-    print(str(myAccount.getTotalPrice()) + "원")
-    myAccount.exportAsFile()
+    
+        
     
 if __name__ == "__main__":
     main()
-    print('yay')
 
