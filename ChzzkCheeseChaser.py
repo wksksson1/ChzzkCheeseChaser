@@ -3,7 +3,7 @@ import requests
 import json
 import os
 import argparse
-
+import sys
 
 class CheeseAccount:
 
@@ -37,6 +37,7 @@ class CheeseAccount:
             flag = False                                                                     # 반복 중단을 결정하는 flag
             requestURL = urlBase + "page={}&pageSize=10".format(i)                           # i번째 페이지 요청 URL
             apiResponse = requests.get(requestURL, headers=headers, cookies=self.__cookies)    # 요청해 데이터를 얻어옴
+            apiResponse.raise_for_status()
             apiJson = json.loads(apiResponse.content)                                        # apiResponse를를 딕셔너리화
             tempList = apiJson["content"]["data"]                                            # i번째 페이지의 치즈 리스트 
             for j in range(0, len(tempList)):                                                # i번째 페이지의 구매별 데이터
@@ -81,7 +82,19 @@ def main():
     parser.add_argument("-f", "--file", nargs='?', default="", const="purchaseList.txt", type=str)
     parser.add_argument("-s", "--skip", action="store_true")
     args = parser.parse_args()
+    os.system('cls')
+    print("ChzzkCheeseChaser는 치즈를 구매하기 위해 쓴 총액을 구하는 프로그램 입니다.")
+    print("치지직의 로그인이 필수이기 때문에 사용자의 쿠키가 필요합니다.")
+    print("입력한 쿠키는 cookie.txt에만 저장되며 이 프로그램 실행시 자동로그인 외의 용도로 쓰이지 않습니다.")
+    print("쿠키를 얻는 방법은 https://hajoung56.tistory.com/108 을 참고하세요\n")
+    
+    basePath = ""
 
+    if getattr(sys, 'frozen', False):
+        basePath = os.path.dirname(os.path.abspath(sys.executable))
+    else:
+        basePath = os.path.dirname(os.path.abspath(__file__))
+    basePath += "\\"
     cookies = dict()
 
     fileStore = False
@@ -92,7 +105,7 @@ def main():
        
         if len(cookies) == 0:
             try:
-                cookiePath = os.path.abspath(__file__)[:-20] + "cookie.txt"
+                cookiePath = basePath + "cookie.txt"
                 cookieFile = open(cookiePath, 'r')
                 cookies = json.load(cookieFile)
                 cookieFile.close()
@@ -100,23 +113,42 @@ def main():
                 print("쿠키 파일 읽기 실패")
                 return
     else:
-        NID_AUT = input("NID_AUT의 값을 입력하세요 : ")
-        NID_SES = input("NID_SES의 값을 입력하세요 : ")
-        cookies = {"NID_AUT":NID_AUT, "NID_SES":NID_SES}
+        try:
+            cookiePath = basePath + "cookie.txt"
+            cookieFile = open(cookiePath, 'r')
+            cookies = json.load(cookieFile)
+            cookieFile.close()
+            print("cookie.txt에서 쿠키 기록을 읽었습니다.")
+        except:
+            print("쿠키 파일 읽기 실패")
+        
+        if len(cookies) == 0:
+            NID_AUT = input("NID_AUT의 값을 입력하세요 : ")
+            NID_SES = input("NID_SES의 값을 입력하세요 : ")
+            cookies = {"NID_AUT":NID_AUT, "NID_SES":NID_SES}
         fileStore = (True if input("전체 목록을 파일로 만드시겠습니까? (y/n) : ") == 'y' else False)
         
 
     if len(cookies) == 0:
-        print("쿠기가 없습니다")
+        print("쿠키가 없습니다")
         return
     
-    myAccount = CheeseAccount(NID_AUT=cookies["NID_AUT"], NID_SES=cookies["NID_SES"])
-    print(str(myAccount.getTotalPrice()) + "원")
-
     try:
-        cookiePath = os.path.abspath(__file__)[:-20] + "cookie.txt"
+        os.system("cls")
+        print("작업중입니다...")
+        myAccount = CheeseAccount(NID_AUT=cookies["NID_AUT"], NID_SES=cookies["NID_SES"])
+
+        print("\n총 금액 : " + str(myAccount.getTotalPrice()) + "원\n")
+    except:
+        print("문제가 발생했습니다.")
+        print("쿠키의 문제일 수 있으니 cookie.txt를 지우고 다시 한 번 시도해보세요")
+        print("문제가 지속될 경우 https://github.com/wksksson1/ChzzkCheeseChaser/issues로 올려주세요")
+    
+    try:
+        cookiePath = basePath + "cookie.txt"
         cookieFile = open(cookiePath, 'w')
         json.dump(cookies,cookieFile)
+        print("쿠키 파일 저장에 성공했습니다.")
     except:
         print("쿠키 파일 작성 실패")
 
@@ -125,14 +157,16 @@ def main():
 
     if args.file != "" or fileStore:
         try:
-            outputPath = os.path.abspath(__file__)[:-20] + (args.file if args.file != "" else 'purchaseList.txt')
+            outputPath = basePath + (args.file if args.file != "" else 'purchaseList.txt')
             outputFile = open(outputPath, 'w', encoding="utf-8")
             outputFile.write('"{ list" : ' + str(myAccount.getEntireList()).replace('},','},\n ').replace('[', '[\n  ') + "}")
             outputFile.close()
+            print("목록 파일 저장에 성공했습니다.")
         except:
             print("목록 파일 작성 실패")
         finally:
             outputFile.close()
+    os.system("pause")
         
     
         
