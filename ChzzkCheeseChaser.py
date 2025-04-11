@@ -78,32 +78,54 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--NID_AUT", type=str, nargs=1, help="NID_AUT 수동입력", required=False)
     parser.add_argument("--NID_SES", type=str, nargs=1, help="NID_SES 수동입력", required=False)
-    parser.add_argument("-c", "--cookie", nargs='?', default="cookie.txt", const="cookie.txt", help="이미 저장된 쿠키의 정보를 가져옵니다.")
     parser.add_argument("-f", "--file", nargs='?', default="", const="purchaseList.txt", type=str)
     args = parser.parse_args()
 
-    cookies = []
+    cookies = dict()
+
     if (args.NID_AUT!=None and args.NID_SES!=None):
-        cookies += [args.NID_AUT, args.NID_SES]
+        cookies = { "NID_AUT":str(args.NID_AUT)[2:-2], "NID_SES":str(args.NID_SES)[2:-2]}
     
-    if len(cookies) == 0 :
+    if len(cookies) == 0:
         try:
-            cookiePath = os.path.abspath(__file__) + args.cookie
-            file = open(cookiePath)
-            cookies = dict(file.read)
-            myAccount = CheeseAccount(NID_AUT=cookies["NID_AUT"], NID_SES=["NID_SES"])
+            cookiePath = os.path.abspath(__file__)[:-20] + "cookie.txt"
+            cookieFile = open(cookiePath, 'r')
+            cookies = json.load(cookieFile)
         except:
-            print("Something got wrong!")
+            print("쿠키 파일 읽기 실패")
+            return
+        finally:
+            cookieFile.close()
 
 
-    if len(cookies) != 0:
-        myAccount = CheeseAccount(NID_AUT=str(cookies[0]), NID_SES=str(cookies[1]))
-        print(str(myAccount.getTotalPrice()) + "원")
+    if len(cookies) == 0:
+        print("쿠기가 없습니다")
         return
     
-    print("The Credential is void!")
+    myAccount = CheeseAccount(NID_AUT=cookies["NID_AUT"], NID_SES=cookies["NID_SES"])
+    print(str(myAccount.getTotalPrice()) + "원")
 
-    #치즈 구매 내역
+    try:
+        cookiePath = os.path.abspath(__file__)[:-20] + "cookie.txt"
+        cookieFile = open(cookiePath, 'w')
+        json.dump(cookies,cookieFile)
+    except:
+        print("쿠키 파일 작성 실패")
+
+    finally:
+        cookieFile.close()
+
+    if args.file != "":
+        try:
+            outputPath = os.path.abspath(__file__)[:-20] + args.file
+            outputFile = open(outputPath, 'w', encoding="utf-8")
+            outputFile.write('"{ list" : ' + str(myAccount.getEntireList()).replace('},','},\n ').replace('[', '[\n  ') + "}")
+            outputFile.close()
+        except:
+            print("목록 파일 작성 실패")
+        finally:
+            outputFile.close()
+        
     
         
     
