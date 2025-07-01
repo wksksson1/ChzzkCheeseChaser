@@ -7,6 +7,7 @@ https://github.com/wksksson1/ChzzkCheeseChaser/releases/
 
 ### 필요한 것  
 NID_AUT, NID_SES 2개의 쿠키가 필요합니다.
+
 1.2 이후 : wcwidth가 필요합니다.
 
 ### 사용법  
